@@ -199,3 +199,15 @@ dotnet_naming_style.begins_with_i.required_prefix = I
 dotnet_naming_style.begins_with_i.required_suffix = 
 dotnet_naming_style.begins_with_i.word_separator = 
 dotnet_naming_style.begins_with_i.capitalization = pascal_case
+
+# Static Analysers
+# IDE005_gen: Remove unnecessary usings in generated code
+dotnet_diagnostic.IDE0005_gen.severity = silent
+dotnet_diagnostic.RemoveUnnecessaryImportsFixable.severity = silent
+dotnet_analyzer_diagnostic.severity = warning
+
+# Default severity for analyzer diagnostics with category 'Style'
+dotnet_analyzer_diagnostic.category-Style.severity = warning
+
+# CA1801: Review unused parameters - This is covered by IDE0060
+dotnet_diagnostic.CA1801.severity = none
