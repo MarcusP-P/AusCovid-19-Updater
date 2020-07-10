@@ -1,14 +1,29 @@
-﻿using System;
+﻿using AusCovdUpdate.ServiceInterfaces;
+using AusCovdUpdate.Services;
+
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AusCovdUpdate
 {
     public static class Program
     {
         [System.Diagnostics.CodeAnalysis.SuppressMessage ("Style", "IDE0060:Remove unused parameter", Justification = "Main function")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage ("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "Temporary")]
         public static void Main (string[] args)
         {
-            Console.WriteLine ("Hello World!");
+            // Resgister our services
+            var services = new ServiceCollection ();
+            _ = services.AddScoped<IHelloWorld, HelloWorld> ();
+
+            // Build our services
+            var serviceProvider = services.BuildServiceProvider ();
+
+            // Displasy Hello World
+            var helloWorld = serviceProvider.GetService<IHelloWorld> ();
+            helloWorld.PrintHelloWorld ();
+
+            // Remove the serviceces
+            serviceProvider.Dispose ();
+
         }
     }
 }
