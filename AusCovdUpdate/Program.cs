@@ -18,16 +18,20 @@ namespace AusCovdUpdate
             _ = services.AddScoped<IHelloWorld, HelloWorld> ();
             _ = services.AddScoped<IConsoleWrapper, ConsoleWrapper> ();
             _ = services.AddScoped<IHttpFileDownloader, HttpFileDownloader> ();
+            _ = services.AddScoped<ICovid19AuDownloader, Covid19AuDownloader> ();
 
             // Build our services
             var serviceProvider = services.BuildServiceProvider ();
 
-            var httpFileDownloader = serviceProvider.GetService<IHttpFileDownloader> ();
-            var foo= await httpFileDownloader.GetFileStreamAsync (new System.Uri("http://apple.com")).ConfigureAwait(false);
+
 
             // Displasy Hello World
             var helloWorld = serviceProvider.GetService<IHelloWorld> ();
             helloWorld.PrintHelloWorld ();
+
+            var covid19AuReader = serviceProvider.GetService<ICovid19AuDownloader> ();
+            await covid19AuReader.DownloadFile ().ConfigureAwait (false);
+
 
             // Remove the serviceces
             serviceProvider.Dispose ();
