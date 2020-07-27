@@ -31,6 +31,7 @@ namespace AusCovdUpdate
 
             var covid19AuReader = serviceProvider.GetService<ICovid19AuDownloader> ();
             await covid19AuReader.DownloadFile ().ConfigureAwait (false);
+            await covid19AuReader.DeserialiseDownloadedData ().ConfigureAwait (false);
 
 
             // Remove the serviceces

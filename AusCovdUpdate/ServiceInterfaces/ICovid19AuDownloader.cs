@@ -5,5 +5,8 @@ namespace AusCovdUpdate.ServiceInterfaces
     public interface ICovid19AuDownloader
     {
         Task DownloadFile ();
+
+        Task DeserialiseDownloadedData ();
+
     }
 }
