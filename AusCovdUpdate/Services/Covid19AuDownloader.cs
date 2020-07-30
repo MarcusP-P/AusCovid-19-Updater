@@ -69,7 +69,7 @@ namespace AusCovdUpdate.Services
         public static AusCovid19State ConvertArrayToOurData (int[] input)
         {
             Contract.Assert (input != null);
-            Contract.Assert (input.Length <= 6);
+            Contract.Assert (input.Length <= 7);
 
 
             return new AusCovid19State
