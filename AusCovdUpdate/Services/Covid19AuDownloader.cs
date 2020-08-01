@@ -53,17 +53,15 @@ namespace AusCovdUpdate.Services
                     VIC = ConvertArrayToOurData (currentDay.VIC),
                     WA = ConvertArrayToOurData (currentDay.WA),
                 };
-                if (previous == null)
+                if (previous != null)
                 {
-                    previous = newData;
-                    daily.Add (previous);
-                }
-                else
-                {
-                    daily.Add (newData - previous);
+                    var todayData = newData - previous;
+                    daily.Add (newData.Date, todayData);
                 }
                 cumulative.Add (newData);
+                previous = newData;
             }
+            return daily;
         }
 
         public static AusCovid19State ConvertArrayToOurData (int[] input)
