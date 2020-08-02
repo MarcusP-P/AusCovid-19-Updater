@@ -28,12 +28,12 @@ namespace AusCovdUpdate.Services
             this.JsonStream = await this.httpFileDownloader.GetFileStreamAsync (this.Uri).ConfigureAwait (false);
         }
 
-        public async Task DeserialiseDownloadedData ()
+        public async Task<Dictionary<DateTime, Covid19Aus>> DeserialiseDownloadedData ()
         {
             var deserialised = await JsonSerializer.DeserializeAsync<Dictionary<string, AusCovid19DataDTO>> (this.JsonStream).ConfigureAwait (false);
 
             var cumulative = new List<Covid19Aus> ();
-            var daily = new List<Covid19Aus> ();
+            var daily = new Dictionary<DateTime, Covid19Aus> ();
             Covid19Aus previous = null;
             foreach (var day in deserialised.Keys)
             {

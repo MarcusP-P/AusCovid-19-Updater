@@ -19,6 +19,7 @@ namespace AusCovdUpdate
             _ = services.AddScoped<IConsoleWrapper, ConsoleWrapper> ();
             _ = services.AddScoped<IHttpFileDownloader, HttpFileDownloader> ();
             _ = services.AddScoped<ICovid19AuDownloader, Covid19AuDownloader> ();
+            _ = services.AddScoped<IExcelDocument, ExcelDocument> ();
 
             // Build our services
             var serviceProvider = services.BuildServiceProvider ();
@@ -31,8 +32,11 @@ namespace AusCovdUpdate
 
             var covid19AuReader = serviceProvider.GetService<ICovid19AuDownloader> ();
             await covid19AuReader.DownloadFile ().ConfigureAwait (false);
-            await covid19AuReader.DeserialiseDownloadedData ().ConfigureAwait (false);
+            var dailyStatsTask = covid19AuReader.DeserialiseDownloadedData ();
 
+            var excelReader = serviceProvider.GetService<IExcelDocument> ();
+            excelReader.OpenDocument (@"c:\Users\Marcus\Source\Repos\AusCovid-19\COVID-19 Australia.xlsx");
+            excelReader.UpdateSpreadsheet (await dailyStatsTask.ConfigureAwait (false));
 
             // Remove the serviceces
             serviceProvider.Dispose ();

@@ -7,21 +7,21 @@ namespace AusCovdUpdate.Model
     {
         public DateTime Date { get; set; }
 
+        public AusCovid19State ACT { get; set; }
+
         public AusCovid19State NSW { get; set; }
+
+        public AusCovid19State NT { get; set; }
 
         public AusCovid19State QLD { get; set; }
 
-        public AusCovid19State VIC { get; set; }
-
         public AusCovid19State SA { get; set; }
-
-        public AusCovid19State WA { get; set; }
 
         public AusCovid19State TAS { get; set; }
 
-        public AusCovid19State ACT { get; set; }
+        public AusCovid19State VIC { get; set; }
 
-        public AusCovid19State NT { get; set; }
+        public AusCovid19State WA { get; set; }
 
         public static Covid19Aus operator - (Covid19Aus left, Covid19Aus right)
         {

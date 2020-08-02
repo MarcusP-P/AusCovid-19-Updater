@@ -1,4 +1,8 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+using AusCovdUpdate.Model;
 
 namespace AusCovdUpdate.ServiceInterfaces
 {
@@ -6,7 +10,7 @@ namespace AusCovdUpdate.ServiceInterfaces
     {
         Task DownloadFile ();
 
-        Task DeserialiseDownloadedData ();
+        Task<Dictionary<DateTime, Covid19Aus>> DeserialiseDownloadedData ();
 
     }
 }
