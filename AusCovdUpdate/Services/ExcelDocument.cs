@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Linq;
@@ -75,11 +76,22 @@ namespace AusCovdUpdate.Services
             uint lastSeenRow = 0;
             DateTime? lastDate = null;
 
-            foreach (var row in dailyData.Descendants<Row> ().Where (r => r.RowIndex.Value >= 3).OrderBy(x=>x.RowIndex.Value))
+            uint? dateSyleIndex = null;
+
+            foreach (var row in dailyData.Descendants<Row> ()
+                .Where (r => r.RowIndex.Value >= 3)
+                .OrderBy (x => x.RowIndex.Value))
             {
                 lastSeenRow = GetRowIndex (row.RowIndex);
 
                 var cell = GetCellForColumn (row, "A");
+
+                if (dateSyleIndex == null)
+                {
+                    dateSyleIndex = cell.StyleIndex.Value;
+                }
+
+                lastSeenRow = row.RowIndex.Value;
 
                 // get the date for the current row
                 var currentRowDate = DateTime.FromOADate (double.Parse (cell.CellValue.Text, CultureInfo.InvariantCulture));
@@ -130,6 +142,47 @@ namespace AusCovdUpdate.Services
                     }
                 }
             }
+
+            var sheetData = dailyData.GetFirstChild<SheetData> ();
+
+            // Go through the remainign dates
+            foreach (var newDate in items.Keys
+                .Where (x => x > lastDate)
+                .OrderBy (x => x))
+            {
+                var newRow = lastSeenRow + 1;
+                var row = dailyData.Descendants<Row> ()
+                 .Where (r => r.RowIndex.Value == newRow)
+                 .OrderBy (x => x.RowIndex.Value)
+                 .FirstOrDefault ();
+
+                if (row == null)
+                {
+                    row = new Row { RowIndex = newRow };
+
+                    sheetData.Append (row);
+                }
+
+                // It's okay to drop the fractional part
+                var dateCell = UpdateCell (row, "A", (int) newDate.ToOADate());
+
+                dateCell.StyleIndex = dateSyleIndex;
+
+                var values = items[newDate];
+                UpdateStatisticsForState (row, ActCases, ActRecovered, ActDeaths, values.ACT);
+                UpdateStatisticsForState (row, NswCases, NswRecovered, NswDeaths, values.NSW);
+                UpdateStatisticsForState (row, NtCases, NtRecovered, NtDeaths, values.NT);
+                UpdateStatisticsForState (row, QldCases, QldRecovered, QldDeaths, values.QLD);
+                UpdateStatisticsForState (row, SaCases, SaRecovered, SaDeaths, values.SA);
+                UpdateStatisticsForState (row, TasCases, TasRecovered, TasDeaths, values.TAS);
+                UpdateStatisticsForState (row, VicCases, VicRecovered, VicDeaths, values.VIC);
+                UpdateStatisticsForState (row, WaCases, WaRecovered, WaDeaths, values.WA);
+
+                lastSeenRow = newRow;
+
+            }
+
+
             var calculationProperties = this.spreadsheetDocument.WorkbookPart.Workbook.CalculationProperties;
             calculationProperties.ForceFullCalculation = true;
             calculationProperties.FullCalculationOnLoad = true;
@@ -169,12 +222,12 @@ namespace AusCovdUpdate.Services
 
         private static void UpdateStatisticsForState (Row row, string casesColumn, string recoveredColumn, string deathColumn, AusCovid19State state)
         {
-            UpdateCell (row, casesColumn, state.Cases);
-            UpdateCell (row, recoveredColumn, state.Recovered);
-            UpdateCell (row, deathColumn, state.Deaths);
+            _ = UpdateCell (row, casesColumn, state.Cases);
+            _ = UpdateCell (row, recoveredColumn, state.Recovered);
+            _ = UpdateCell (row, deathColumn, state.Deaths);
         }
 
-        private static void UpdateCell (Row row, string column, int value)
+        private static Cell UpdateCell (Row row, string column, int value)
         {
             var rowNumber = row.RowIndex;
             var cell = GetCellForColumn (row, column);
@@ -202,7 +255,7 @@ namespace AusCovdUpdate.Services
                 }
                 cell.CellValue = new CellValue (value.ToString (CultureInfo.InvariantCulture));
             }
-
+            return cell;
         }
 
         protected virtual void Dispose (bool disposing)
