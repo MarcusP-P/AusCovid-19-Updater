@@ -164,7 +164,7 @@ namespace AusCovdUpdate.Services
                 }
 
                 // It's okay to drop the fractional part
-                var dateCell = UpdateCell (row, "A", (int) newDate.ToOADate());
+                var dateCell = UpdateCell (row, "A", (int) newDate.ToOADate ());
 
                 dateCell.StyleIndex = dateSyleIndex;
 
