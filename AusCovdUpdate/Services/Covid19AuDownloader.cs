@@ -12,9 +12,11 @@ using AusCovdUpdate.ServiceInterfaces;
 
 namespace AusCovdUpdate.Services
 {
-    public class Covid19AuDownloader : ICovid19AuDownloader
+    public class Covid19AuDownloader : ICovid19AuDownloader, IDisposable
     {
         private readonly IHttpFileDownloader httpFileDownloader;
+        private bool DisposedValue;
+
         public Uri Uri { get; set; } = new Uri ("https://raw.githubusercontent.com/covid-19-au/covid-19-au.github.io/prod/src/data/state.json");
         public Stream JsonStream { get; set; }
 
@@ -80,6 +82,35 @@ namespace AusCovdUpdate.Services
                 InHospital = input.Length >= 6 ? input[5] : 0,
                 InIcu = input.Length >= 7 ? input[6] : 0,
             };
+        }
+
+        protected virtual void Dispose (bool disposing)
+        {
+            if (!this.DisposedValue)
+            {
+                if (disposing)
+                {
+                    this.JsonStream.Dispose ();
+                }
+
+                // TODO: free unmanaged resources (unmanaged objects) and override finalizer
+                // TODO: set large fields to null
+                this.DisposedValue = true;
+            }
+        }
+
+        // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
+        // ~Covid19AuDownloader()
+        // {
+        //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+        //     Dispose(disposing: false);
+        // }
+
+        public void Dispose ()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            this.Dispose (disposing: true);
+            GC.SuppressFinalize (this);
         }
     }
 }
