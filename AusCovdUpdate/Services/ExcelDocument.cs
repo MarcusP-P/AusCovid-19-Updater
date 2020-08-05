@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 using AusCovdUpdate.Model;
 using AusCovdUpdate.ServiceInterfaces;
 
+using DocumentFormat.OpenXml.Math;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
 
@@ -19,6 +20,7 @@ namespace AusCovdUpdate.Services
         private SpreadsheetDocument spreadsheetDocument;
         private bool disposedValue;
 
+        #region DailyData
         private const string ActCases = "C";
         private const string ActRecovered = "D";
         private const string ActDeaths = "E";
@@ -50,6 +52,33 @@ namespace AusCovdUpdate.Services
         private const string WaCases = "X";
         private const string WaRecovered = "Y";
         private const string WaDeaths = "Z";
+        #endregion
+
+        #region InternationalData
+        private const string BelgiumColumn = "C";
+        private const string BelgiumName = "Belgium";
+
+        private const string DenmarkColumn = "G";
+        private const string DenmarkName = "Denmark";
+
+        private const string FranceColumn = "K";
+        private const string FranceName = "France";
+
+        private const string ItalyColumn = "O";
+        private const string ItalyName = "Italy";
+
+        private const string SouthKoreaColumn = "S";
+        private const string SouthKoreaName = "Korea, South";
+
+        private const string SingaporeColumn = "W";
+        private const string SingaporeName = "Singapore";
+
+        private const string UnitedKingdomColumn = "AA";
+        private const string UnitedKingdomName = "United Kingdom";
+
+        private const string UnitedStatesColumn = "AE";
+        private const string UnitedStatesName = "US";
+        #endregion
 
         public void OpenDocument (string path)
         {
@@ -58,7 +87,7 @@ namespace AusCovdUpdate.Services
 
         }
 
-        public void UpdateSpreadsheet (Dictionary<DateTime, Covid19Aus> items)
+        public void UpdateDailyData (Dictionary<DateTime, Covid19Aus> items)
         {
             Contract.Assert (items != null);
 
@@ -130,15 +159,7 @@ namespace AusCovdUpdate.Services
                 {
                     if (items.ContainsKey (currentRowDate))
                     {
-                        var values = items[currentRowDate];
-                        UpdateStatisticsForState (row, ActCases, ActRecovered, ActDeaths, values.ACT);
-                        UpdateStatisticsForState (row, NswCases, NswRecovered, NswDeaths, values.NSW);
-                        UpdateStatisticsForState (row, NtCases, NtRecovered, NtDeaths, values.NT);
-                        UpdateStatisticsForState (row, QldCases, QldRecovered, QldDeaths, values.QLD);
-                        UpdateStatisticsForState (row, SaCases, SaRecovered, SaDeaths, values.SA);
-                        UpdateStatisticsForState (row, TasCases, TasRecovered, TasDeaths, values.TAS);
-                        UpdateStatisticsForState (row, VicCases, VicRecovered, VicDeaths, values.VIC);
-                        UpdateStatisticsForState (row, WaCases, WaRecovered, WaDeaths, values.WA);
+                        UpdateDailyStatisticsRow (row, items[currentRowDate]);
                     }
                 }
             }
@@ -168,25 +189,163 @@ namespace AusCovdUpdate.Services
 
                 dateCell.StyleIndex = dateSyleIndex;
 
-                var values = items[newDate];
-                UpdateStatisticsForState (row, ActCases, ActRecovered, ActDeaths, values.ACT);
-                UpdateStatisticsForState (row, NswCases, NswRecovered, NswDeaths, values.NSW);
-                UpdateStatisticsForState (row, NtCases, NtRecovered, NtDeaths, values.NT);
-                UpdateStatisticsForState (row, QldCases, QldRecovered, QldDeaths, values.QLD);
-                UpdateStatisticsForState (row, SaCases, SaRecovered, SaDeaths, values.SA);
-                UpdateStatisticsForState (row, TasCases, TasRecovered, TasDeaths, values.TAS);
-                UpdateStatisticsForState (row, VicCases, VicRecovered, VicDeaths, values.VIC);
-                UpdateStatisticsForState (row, WaCases, WaRecovered, WaDeaths, values.WA);
+                UpdateDailyStatisticsRow (row, items[newDate]);
 
                 lastSeenRow = newRow;
 
             }
 
+            var calculationProperties = this.spreadsheetDocument.WorkbookPart.Workbook.CalculationProperties;
+            calculationProperties.ForceFullCalculation = true;
+            calculationProperties.FullCalculationOnLoad = true;
+        }
+
+        private static void UpdateDailyStatisticsRow (Row row, Covid19Aus values)
+        {
+            UpdateStatisticsForState (row, ActCases, ActRecovered, ActDeaths, values.ACT);
+            UpdateStatisticsForState (row, NswCases, NswRecovered, NswDeaths, values.NSW);
+            UpdateStatisticsForState (row, NtCases, NtRecovered, NtDeaths, values.NT);
+            UpdateStatisticsForState (row, QldCases, QldRecovered, QldDeaths, values.QLD);
+            UpdateStatisticsForState (row, SaCases, SaRecovered, SaDeaths, values.SA);
+            UpdateStatisticsForState (row, TasCases, TasRecovered, TasDeaths, values.TAS);
+            UpdateStatisticsForState (row, VicCases, VicRecovered, VicDeaths, values.VIC);
+            UpdateStatisticsForState (row, WaCases, WaRecovered, WaDeaths, values.WA);
+
+        }
+
+        private static void UpdateStatisticsForState (Row row, string casesColumn, string recoveredColumn, string deathColumn, AusCovid19State state)
+        {
+            _ = UpdateCell (row, casesColumn, state.Cases);
+            _ = UpdateCell (row, recoveredColumn, state.Recovered);
+            _ = UpdateCell (row, deathColumn, state.Deaths);
+        }
+
+        public void UpdateInternationalData (Dictionary<DateTime, Dictionary<string, int>> items)
+        {
+            Contract.Assert (items != null);
+
+            // Get the sheets
+            var internationalDataSheets = this.spreadsheetDocument.WorkbookPart
+                .Workbook
+                .Descendants<Sheet> ()
+                .Where (s => s.Name == "International");
+
+            // Get the actual sheet
+            var internationalData = ((WorksheetPart) this.spreadsheetDocument.WorkbookPart.GetPartById (internationalDataSheets.First ().Id)).Worksheet;
+
+            // Get the first date from the data
+            var firstDate = items.Keys
+                .OrderBy (x => x)
+                .FirstOrDefault ();
+
+            // Keep track of the last row that we've seen
+            uint lastSeenRow = 0;
+
+            // Keep track of the last date we've seen
+            DateTime? lastDate = null;
+
+            // Get the style index for dates
+            uint? dateSyleIndex = null;
+
+            // Go through the current rows
+            foreach (var row in internationalData.Descendants<Row> ()
+                .Where (r => r.RowIndex.Value >= 3)
+                .OrderBy (x => x.RowIndex.Value))
+            {
+                // Update last seen
+                lastSeenRow = GetRowIndex (row.RowIndex);
+
+                // Get the date column
+                var cell = GetCellForColumn (row, "A");
+
+                if (dateSyleIndex == null)
+                {
+                    dateSyleIndex = cell.StyleIndex.Value;
+                }
+
+                // get the date for the current row
+                DateTime currentRowDate;
+                if (cell != null && cell.CellValue != null)
+                {
+                    currentRowDate = DateTime.FromOADate (double.Parse (cell.CellValue.Text, CultureInfo.InvariantCulture));
+                }
+                else
+                {
+                    // We don't have a date, add it
+                    currentRowDate = lastDate?.AddDays (1)??DateTime.Now.Date;
+
+                    // Check that the date is in tthe data
+                    if (!items.ContainsKey(currentRowDate))
+                    {
+                        break;
+                    }
+                    cell = UpdateCell (row, "A", (int) currentRowDate.ToOADate ());
+                    cell.StyleIndex.Value = (uint) dateSyleIndex;
+                }
+
+                lastDate = currentRowDate;
+
+                if (currentRowDate >= firstDate)
+                {
+                    if (items.ContainsKey (currentRowDate))
+                    {
+                        AddInternationalData (row, items[currentRowDate]);
+                    }
+                }
+            }
+
+            // We need this to append rows
+            var sheetData = internationalData.GetFirstChild<SheetData> ();
+
+            // Go through the remainign dates
+            foreach (var newDate in items.Keys
+                .Where (x => x > lastDate)
+                .OrderBy (x => x))
+            {
+                // calculate the next row's value
+                var newRow = lastSeenRow + 1;
+
+                // Load the row
+                var row = internationalData.Descendants<Row> ()
+                 .Where (r => r.RowIndex.Value == newRow)
+                 .OrderBy (x => x.RowIndex.Value)
+                 .FirstOrDefault ();
+
+                // If the row doesn't exist, add it
+                if (row == null)
+                {
+                    row = new Row { RowIndex = newRow };
+
+                    sheetData.Append (row);
+                }
+
+                // It's okay to drop the fractional part
+                var dateCell = UpdateCell (row, "A", (int) newDate.ToOADate ());
+
+                dateCell.StyleIndex = dateSyleIndex;
+
+                AddInternationalData (row, items[newDate]);
+
+                lastSeenRow = newRow;
+            }
 
             var calculationProperties = this.spreadsheetDocument.WorkbookPart.Workbook.CalculationProperties;
             calculationProperties.ForceFullCalculation = true;
             calculationProperties.FullCalculationOnLoad = true;
         }
+
+        private static void AddInternationalData (Row row, Dictionary<string, int> items)
+        {
+            _ = UpdateCell (row, BelgiumColumn, items[BelgiumName]);
+            _ = UpdateCell (row, DenmarkColumn, items[DenmarkName]);
+            _ = UpdateCell (row, FranceColumn, items[FranceName]);
+            _ = UpdateCell (row, ItalyColumn, items[ItalyName]);
+            _ = UpdateCell (row, SouthKoreaColumn, items[SouthKoreaName]);
+            _ = UpdateCell (row, SingaporeColumn, items[SingaporeName]);
+            _ = UpdateCell (row, UnitedKingdomColumn, items[UnitedKingdomName]);
+            _ = UpdateCell (row, UnitedStatesColumn, items[UnitedStatesName]);
+        }
+
 
         public static Cell GetCellForColumn (Row row, string column)
         {
@@ -218,13 +377,6 @@ namespace AusCovdUpdate.Services
             var match = regex.Match (cellName);
 
             return match.Value;
-        }
-
-        private static void UpdateStatisticsForState (Row row, string casesColumn, string recoveredColumn, string deathColumn, AusCovid19State state)
-        {
-            _ = UpdateCell (row, casesColumn, state.Cases);
-            _ = UpdateCell (row, recoveredColumn, state.Recovered);
-            _ = UpdateCell (row, deathColumn, state.Deaths);
         }
 
         private static Cell UpdateCell (Row row, string column, int value)

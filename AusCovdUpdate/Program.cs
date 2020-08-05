@@ -35,11 +35,12 @@ namespace AusCovdUpdate
 
             var johnsHopkinsDownloader = serviceProvider.GetService<IJohnsHopkinsDownloader> ();
             await johnsHopkinsDownloader.DownloadFile ().ConfigureAwait (false);
-            _ = await johnsHopkinsDownloader.DeserialiseDownloadedData ().ConfigureAwait (false);
+            var internationalStatsTask = johnsHopkinsDownloader.DeserialiseDownloadedData ();
 
             var excelReader = serviceProvider.GetService<IExcelDocument> ();
             excelReader.OpenDocument (@"c:\Users\Marcus\Source\Repos\AusCovid-19\COVID-19 Australia.xlsx");
-            excelReader.UpdateSpreadsheet (await dailyStatsTask.ConfigureAwait (false));
+            excelReader.UpdateDailyData (await dailyStatsTask.ConfigureAwait (false));
+            excelReader.UpdateInternationalData (await internationalStatsTask.ConfigureAwait (false));
 
             // Remove the serviceces
             serviceProvider.Dispose ();

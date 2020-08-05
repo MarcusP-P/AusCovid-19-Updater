@@ -10,7 +10,8 @@ namespace AusCovdUpdate.ServiceInterfaces
 
         void OpenDocument (string path);
 
-        void UpdateSpreadsheet (Dictionary<DateTime, Covid19Aus> items);
+        void UpdateDailyData (Dictionary<DateTime, Covid19Aus> items);
 
+        void UpdateInternationalData (Dictionary<DateTime, Dictionary<string, int>> items);
     }
 }
